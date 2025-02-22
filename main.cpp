@@ -1,8 +1,13 @@
 #include <iostream>
 #include <string>
+#include "game.h"
+
 
 int main() {
-  std::string curMessage = "You are at the starting position";
-  std::cout << curMessage << std::endl;
-  return 0;
+    Game game; // Create a game object
+    game.startGame(); // Call the function to start the game
+
+    //std::cout << curMessage << std::endl;
+
+    return 0;
 }
