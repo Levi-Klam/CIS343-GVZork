@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 #include "game.h"
 #include <iostream>
 #include <cctype>      // For std::tolower
@@ -39,4 +40,23 @@ void Game::displayHelp() {
     std::cout << "  help  - Display this help message" << std::endl;
     std::cout << "  quit  - Quit the game" << std::endl;
     std::cout << "  look  - Look around" << std::endl;
+=======
+#include "game.h"
+#include <iostream>
+
+void Game::startGame() {
+    std::string command;
+    std::cout << "You are in the starting position, type a command or type 'help' for help" << std::endl;
+
+    while (true) {
+        std::cout << "> ";
+        std::getline(std::cin, command);
+
+        if (command == "quit") {
+            break;
+        }
+
+        //processCommand(command);
+    }
+>>>>>>> 1f1e89e0885b47046d1924395484d408c8f6fa77
 }
