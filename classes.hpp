@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <vector>
 #include <map>
+#include <functional>
 
 class Item {
     public:
@@ -53,11 +54,40 @@ class NPC {
 
             this->name = name;
             this->description = description;
+            this->messageNum = 0;
         }
 
-        // getters for name and description
+        std::string get_name() {
+          return this->name;
+        }
+
+        std::string get_description() {
+          return this->description;
+        }
+
+        void set_name(std::string name) {
+          this->name = name;
+        }
+
+        void set_description(std::string description) {
+          this->description = description;
+        }
 
         // getter for messages that returns the current message/changes message number
+        void set_messages(const std::vector<std::string>& messages) {
+          this->messages = messages;
+          this->messageNum = 0;
+        }
+
+        std::string get_message() {
+          if(this->messageNum >= this->messages.size()-1){
+            this->messageNum = 0;
+          } else {
+            this->messageNum++;
+          }
+
+          return this->messages[this->messageNum];
+        }
 
     private:
         std::string name;
@@ -84,36 +114,86 @@ class Location {
 
             this->name = name;
             this->description = description;
+            this->visited = false;
         }
 
-        // get_locations()
+        // methods that get
+        std::map<std::string, std::reference_wrapper<Location>> get_locations() {
+          return this->neighbors;
+        }
 
-        // add_location(string direction, Location location)
+        std::vector<std::reference_wrapper<NPC>> get_npcs() {
+          return this->npcs;
+        }
 
-        // add_npc(NPC npc)
+        std::vector<std::reference_wrapper<Item>> get_items() {
+          return this->items;
+        }
 
-        // add_item(Item item)
+        std::string get_description() {
+          return this->description;
+        }
 
-        // set_visited()
+        bool get_visited() {
+          return this->visited;
+        }
 
-        // get_visited()
+        // methods that add to lists and set
+        void add_location(const std::string& direction, Location& location) {
+          if (direction.empty()) {
+              throw std::invalid_argument("Direction cannot be blank.");
+          }
+
+          if (this->neighbors.find(direction) != this->neighbors.end()) {
+              throw std::invalid_argument("Direction is already being used");
+          }
+
+          this->neighbors[direction] = location;
+        }
+
+        void add_npc(NPC& npc) {
+          this->npcs.push_back(npc);
+        }
+
+        void add_item(Item& item) {
+          this->items.push_back(item);
+        }
+
+        void set_visited() {
+          this->visited = true;
+        }
+
+
+
     
     private:
         std::string name;
         std::string description;
         bool visited;
-        std::map<std::string, Location> neighbors;
-        std::vector<NPC> npcs;
-        std::vector<Item> items;
+        std::map<std::string, std::reference_wrapper<Location>> neighbors;
+        std::vector<std::reference_wrapper<NPC>> npcs;
+        std::vector<std::reference_wrapper<Item>> items;
 
     friend std::ostream& operator<<(std::ostream& os, const Location& location) {
         os << location.name << " - " << location.description << "\n";
         os << "You see the following NPCs:\n";
         // list NPCs
+        for(auto& npc : location.npcs) {
+          os << npc.get() << "\n";
+        }
+
         os << "You see the following Items:\n";
         // list Items
+        for (const auto& item : location.items) {
+          os << item.get() << "\n";
+        }
+
         os << "You can go in the following Directions:\n";
         // list locations/directions that are connected to this Location
+        for(auto& pair : location.neighbors) {
+          os << pair.first << " - " << pair.second.get().get_description() << "\n";
+        }
+        
         return os;
     }
 };
