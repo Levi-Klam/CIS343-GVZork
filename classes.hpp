@@ -104,6 +104,7 @@ class NPC {
 
 class Location {
     public:
+        Location(){}
         Location(std::string name, std::string description) {
             if (name.empty()) {
                 throw std::invalid_argument("Name cannot be blank.");
