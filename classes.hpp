@@ -93,7 +93,7 @@ class NPC {
         std::string name;
         std::string description;
         std::vector<std::string> messages;
-        int messageNum;
+        size_t messageNum;
 
     friend std::ostream& operator<<(std::ostream& os, const NPC& npc) {
         os << npc.name;
@@ -148,7 +148,7 @@ class Location {
               throw std::invalid_argument("Direction is already being used");
           }
 
-          this->neighbors[direction] = location;
+          this->neighbors.emplace(direction, std::ref(location));
         }
 
         void add_npc(NPC& npc) {

@@ -13,6 +13,7 @@ public:
     void startGame();
     void processCommand(std::string command);
     void displayHelp();
+    void createWorld();
 };
 
 

@@ -1,6 +1,7 @@
 #include "game.h"
 #include <iostream>
 #include <cctype>      // For std::tolower
+#include "classes.hpp"     // For std::tolower
 
 void Game::startGame() {
     std::string command;
@@ -41,3 +42,11 @@ void Game::displayHelp() {
     std::cout << "  look  - Look around" << std::endl;
 
 }
+
+void Game::createWorld() {
+  Location Kirkoff("Kirkoff", "The centeral buss station for GVSU.");
+  Location Library("Library", "The library that is located on the allendale campus.");
+  Location LevisHouse("Levis House", "A GVSU students house.");
+  Location Mackinac("Mackinac", "Home of GVSU computting");
+}
+
