@@ -99,6 +99,40 @@ void Game::createWorld() {
 
     // Set starting location
     curLocation = *kirkoff; // Set curLocation to point to kirkoff
+
+    // Create item objects
+    Item* book = new Item("Book", "A book for reading.", 0, 0.5);
+    Item* backpack = new Item("Backpack", "A backpack for carrying items.", 0, 2.0);
+    Item* levisJournal = new Item("Levi's Journal", "A journal with notes about C++.", 0, 1.0);
+    Item* busPass = new Item("Bus Pass", "A bus pass for the Laker Line.", 0, 0.1);
+    Item* cake = new Item("Chocolate Cake", "Must've been a birthday party.", 150, 5.0);
+    Item* nuggies = new Item("Nuggies", "6 piece nugget.", 50, 1.0);
+    Item* granolaBar = new Item("Granola Bar", "A light snack.", 25, 0.5);
+    Item* bread = new Item("Bread", "A loaf of bread.", 50, 1.0);
+    Item* fish = new Item("Fish", "A fish.", 100, 3.0);
+    Item* helmet = new Item("Helmet", "A helmet for protection.", 0, 5.0);
+
+    // Add items to locations
+    stadium->add_item(*helmet);
+    levisHouse->add_item(*levisJournal);
+    library->add_item(*book);
+    housing->add_item(*backpack);
+    kirkoff->add_item(*busPass);
+    housing->add_item(*cake);
+    mackinac->add_item(*nuggies);
+    levisHouse->add_item(*granolaBar);
+    library->add_item(*bread);
+    stadium->add_item(*fish);
+
+    // Create NPC objects
+    NPC* levi = new NPC("Levi", "A GVSU student who loves C++.");
+    NPC* busDriver = new NPC("Bus Driver", "The driver of the Laker Line.");
+    NPC* librarian = new NPC("Librarian", "The librarian at the GVSU library.");
+
+    // Add NPCs to locations
+    library->add_npc(*librarian);
+    kirkoff->add_npc(*busDriver);
+    levisHouse->add_npc(*levi);
 }
 
 void Game::exit() {
