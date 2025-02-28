@@ -6,6 +6,8 @@
 #include <vector>
 #include <map>
 #include <functional>
+#include <algorithm> // Include this header for std::remove_if
+
 
 class Item {
     public:
@@ -27,6 +29,14 @@ class Item {
             this->description = description;
             this->calories = calories;
             this->weight = weight;
+        }
+
+        std::string getName() const {
+          return name;
+        }
+
+        float getWeight() const {
+          return weight;
         }
 
     private:
@@ -156,12 +166,28 @@ class Location {
           this->npcs.push_back(npc);
         }
 
-        void add_item(Item& item) {
+        void addItem(Item& item) {
           this->items.push_back(item);
         }
 
         void set_visited() {
           this->visited = true;
+        }
+
+        const std::string& getName() const {
+          return this->name;
+        }
+
+        std::vector<std::reference_wrapper<Item>>& getItems() {
+          return this->items;
+        }
+  
+        void removeItem(const std::string& itemName) {
+          auto initialSize = items.size();
+          items.erase(std::remove_if(items.begin(), items.end(), [&itemName](const std::reference_wrapper<Item>& item) {
+              return item.get().getName() == itemName;
+          }), items.end());
+          auto finalSize = items.size();
         }
 
 
