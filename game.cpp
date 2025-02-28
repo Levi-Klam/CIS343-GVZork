@@ -1,6 +1,7 @@
 #include "game.h"
 #include <iostream>
-#include <cctype>  
+#include <cctype>    // for std::tolower
+#include <algorithm> // for std::find_if
 #include "classes.hpp" 
 
 void Game::startGame() {
@@ -27,15 +28,26 @@ void Game::processCommand(std::string command) {
         displayHelp();
     }
     else if (command == "look") {
-        std::cout << curLocation << std::endl;
+        std::cout << *curLocation << std::endl;
     }
-    else if (
-        command == "north" ||
-        command == "east"  ||
-        command == "south" ||
-        command == "west"
-    ) {
-        go(command);
+    // I updated this so commands are entered as "go north" instead of "north"
+    else if ((command.rfind("go ", 0) == 0) && (command.substr(3) == "north" || command.substr(3) == "south" \
+                                                || command.substr(3) == "east" || command.substr(3) == "west")) {
+        go(command.substr(3));
+    }
+    else if (command.rfind("pickup ", 0) == 0) {
+        // If the command starts with "pickup ", grab the item name from the rest of the string
+        // and call pickUpItem
+        std::string itemName = command.substr(7);
+        take(itemName);
+    }
+    else if (command.rfind("drop ", 0) == 0) {
+        // Same as above, but for dropping items
+        std::string itemName = command.substr(5);
+        drop(itemName);
+    }
+    else if (command == "backpack") {
+        show_items();
     }
     else {
         std::cout << "Invalid command" << std::endl;
@@ -45,13 +57,16 @@ void Game::processCommand(std::string command) {
 void Game::displayHelp() {
     std::cout << "Available commands:" << std::endl;
     std::cout << "  help  - Display this help message" << std::endl;
-    std::cout << "  quit  - Quit the game" << std::endl;
     std::cout << "  look  - Look around" << std::endl;
     std::cout << "  go [direction] - Move in a direction (north, south, east, west)" << std::endl;
+    std::cout << "  pickup [item] - Pick up an item" << std::endl;
+    std::cout << "  backpack - Check your inventory" << std::endl;
+    std::cout << "  drop [item] - Drop an item" << std::endl;
+    std::cout << "  quit  - Quit the game" << std::endl;
 }
 
 void Game::go(std::string target) {
-    auto locations = curLocation.get_locations();
+    auto locations = curLocation->get_locations();
     auto it = locations.find(target);
 
     if (it == locations.end()) {
@@ -59,10 +74,58 @@ void Game::go(std::string target) {
         return; 
     }
 
-    // std::cout << &it->second.get() << std::endl;
     std::cout << "You moved." << std::endl;
-    curLocation = it->second; // Move to the new location
+    curLocation = &it->second.get(); // Move to the new location
 }
+
+void Game::take(std::string itemName) {
+    auto& items = curLocation->getItems();
+
+    // Item names are stored Capitalized. Commands are input in lowercase.
+    // This searches for items in the current locations items and compares the lowercase version of the item name
+    auto it = std::find_if(items.begin(), items.end(), [&itemName](const std::reference_wrapper<Item>& item) {
+        std::string itemNameInList = item.get().getName();
+        // Convert itemNameInList to lowercase for case-insensitive comparison
+        std::transform(itemNameInList.begin(), itemNameInList.end(), itemNameInList.begin(), ::tolower);
+        return itemNameInList == itemName;
+    });
+
+    // If item in location, add to player inventory, remove from location, and update player carry weight
+    if (it != items.end()) {
+        playerInventory.push_back(it->get());
+        playerCarryWeight += it->get().getWeight();
+        curLocation->removeItem(it->get().getName()); 
+        std::cout << "You picked up " << itemName << "." << std::endl;
+    } else {
+        std::cout << "Item not found." << std::endl;
+    }
+}
+
+void Game::drop(std::string itemName) {
+    auto it = std::find_if(playerInventory.begin(), playerInventory.end(), [&itemName](const Item& item) {
+        std::string itemNameInList = item.getName();
+        std::transform(itemNameInList.begin(), itemNameInList.end(), itemNameInList.begin(), ::tolower);
+        return itemNameInList == itemName;
+    });
+
+    if (it != playerInventory.end()) {
+        curLocation->addItem(*it);
+        playerCarryWeight -= it->getWeight();
+        playerInventory.erase(it);
+        std::cout << "You dropped " << itemName << "." << std::endl;
+    } else {
+        std::cout << "Item not found." << std::endl;
+    }
+}
+
+void Game::show_items() {
+    std::cout << "Your inventory:" << std::endl;
+    for (const auto& item : playerInventory) {
+        std::cout << "  " << item << std::endl;
+    }
+    std::cout << "Total carry weight: " << playerCarryWeight << "/30 lbs" << std::endl;
+}
+
 
 void Game::createWorld() {
     // Create Location objects on the heap
@@ -98,7 +161,7 @@ void Game::createWorld() {
     levisHouse->add_location("west", *mackinac);
 
     // Set starting location
-    curLocation = *kirkoff; // Set curLocation to point to kirkoff
+    curLocation = kirkoff; // Set curLocation to point to kirkoff
 
     // Create item objects
     Item* book = new Item("Book", "A book for reading.", 0, 0.5);
@@ -113,16 +176,16 @@ void Game::createWorld() {
     Item* helmet = new Item("Helmet", "A helmet for protection.", 0, 5.0);
 
     // Add items to locations
-    stadium->add_item(*helmet);
-    levisHouse->add_item(*levisJournal);
-    library->add_item(*book);
-    housing->add_item(*backpack);
-    kirkoff->add_item(*busPass);
-    housing->add_item(*cake);
-    mackinac->add_item(*nuggies);
-    levisHouse->add_item(*granolaBar);
-    library->add_item(*bread);
-    stadium->add_item(*fish);
+    stadium->addItem(*helmet);
+    levisHouse->addItem(*levisJournal);
+    library->addItem(*book);
+    housing->addItem(*backpack);
+    kirkoff->addItem(*busPass);
+    housing->addItem(*cake);
+    mackinac->addItem(*nuggies);
+    levisHouse->addItem(*granolaBar);
+    library->addItem(*bread);
+    stadium->addItem(*fish);
 
     // Create NPC objects
     NPC* levi = new NPC("Levi", "A GVSU student who loves C++.");

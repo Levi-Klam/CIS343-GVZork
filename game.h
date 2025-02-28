@@ -7,9 +7,10 @@
 
 class Game {
 private:
-    Location curLocation;
+    Location* curLocation;
     std::vector<Location*> locationPtrs;
-    std::vector<std::string> playerInventory;
+    std::vector<Item> playerInventory;
+    float playerCarryWeight;
     bool isRunning;
 
 public:
@@ -18,6 +19,9 @@ public:
     void displayHelp();
     void go(std::string target);
     void createWorld();
+    void take(std::string itemName);
+    void drop(std::string itemName);
+    void show_items();
     void exit();
 };
 
