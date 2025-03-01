@@ -2,10 +2,14 @@
 #include <iostream>
 #include <cctype>    // for std::tolower
 #include <algorithm> // for std::find_if
+#include <random>   // for teleporting the player
+
 #include "classes.hpp" 
 
 void Game::startGame() {
     std::string command;
+    std::cout << "You wake up from a bad dream where you were late for class. Thankfully, you don't have classes anymore, because the world ended."  << std::endl;
+    std::cout << "There's a monolithic rock in front of you, urging you to speak to it." << std::endl;
     std::cout << "You are in the starting position, type a command or type 'help' for help" << std::endl;
 
     isRunning = true;
@@ -49,6 +53,22 @@ void Game::processCommand(std::string command) {
     else if (command == "backpack") {
         show_items();
     }
+    else if (command.rfind("talk ", 0) == 0) {
+        std::string npcName = command.substr(5);
+        talk(npcName);
+    }
+    else if (command.rfind("give ", 0) == 0) {
+        // This was copilot assisted. I had to add a spacePos variable to find the space after the npc name
+        // and then use that to split the string into npcName and itemName
+        size_t spacePos = command.find(' ', 5);
+        if (spacePos != std::string::npos) {
+            std::string npcName = command.substr(5, spacePos - 5);
+            std::string itemName = command.substr(spacePos + 1);
+            give(npcName, itemName);
+        } else {
+            std::cout << "Invalid give command format. Use 'give [npc] [item]'." << std::endl;
+        }
+    }
     else {
         std::cout << "Invalid command" << std::endl;
     }
@@ -62,12 +82,23 @@ void Game::displayHelp() {
     std::cout << "  pickup [item] - Pick up an item" << std::endl;
     std::cout << "  backpack - Check your inventory" << std::endl;
     std::cout << "  drop [item] - Drop an item" << std::endl;
+    std::cout << "  talk [npc] - Talk to an NPC" << std::endl;
+    std::cout << "  give [npc] [item] - Give an item to an NPC" << std::endl;
     std::cout << "  quit  - Quit the game" << std::endl;
 }
 
 void Game::go(std::string target) {
     auto locations = curLocation->get_locations();
-    auto it = locations.find(target);
+    
+    // Convert the input direction to lowercase
+    std::transform(target.begin(), target.end(), target.begin(), ::tolower);
+
+    // Find the direction in the map by comparing lowercase versions
+    auto it = std::find_if(locations.begin(), locations.end(), [&target](const auto& pair) {
+        std::string direction = pair.first;
+        std::transform(direction.begin(), direction.end(), direction.begin(), ::tolower);
+        return direction == target;
+    });
 
     if (it == locations.end()) {
         std::cout << "You cannot go that way." << std::endl;
@@ -126,15 +157,139 @@ void Game::show_items() {
     std::cout << "Total carry weight: " << playerCarryWeight << "/30 lbs" << std::endl;
 }
 
+void Game::talk(const std::string& npcName) {
+    const auto& npcs = curLocation->get_npcs();
+    auto it = std::find_if(npcs.begin(), npcs.end(),
+        [&npcName](const std::reference_wrapper<NPC>& npc) {
+            std::string npcNameInList = npc.get().get_name();
+            std::transform(npcNameInList.begin(), npcNameInList.end(), 
+                          npcNameInList.begin(), ::tolower);
+            return npcNameInList == npcName;
+        });
+    if (it != npcs.end()) {
+        std::cout << it->get().get_message() << std::endl;
+    } else {
+        std::cout << "NPC not found." << std::endl;
+    }
+}
+
+void Game::give(const std::string& npcName, const std::string& itemName) {
+    std::cout << "[You give the " << itemName << " to the " << npcName << ".]" << std::endl;
+    
+    // Find the NPC in the current location
+    const auto& npcs = curLocation->get_npcs();
+    auto npcIt = std::find_if(npcs.begin(), npcs.end(),
+        [&npcName](const std::reference_wrapper<NPC>& npc) {
+            std::string npcNameInList = npc.get().get_name();
+            std::transform(npcNameInList.begin(), npcNameInList.end(), 
+                          npcNameInList.begin(), ::tolower);
+            return npcNameInList == npcName;
+    });
+    
+    if (npcIt == npcs.end()) {
+        std::cout << "NPC not found." << std::endl;
+        return;
+    }
+    
+    // Find the item in the player's inventory
+    auto itemIt = std::find_if(playerInventory.begin(), playerInventory.end(), 
+                              [&itemName](const Item& item) {
+        std::string itemNameInList = item.getName();
+        std::transform(itemNameInList.begin(), itemNameInList.end(), 
+                      itemNameInList.begin(), ::tolower);
+        return itemNameInList == itemName;
+    });
+    
+    if (itemIt == playerInventory.end()) {
+        std::cout << "Item not found in inventory." << std::endl;
+        return;
+    }
+    
+    // Remove the item from the player's inventory
+    playerCarryWeight -= itemIt->getWeight();
+    playerInventory.erase(itemIt);
+    
+    if (npcName == "troll" && itemName == "gold coin") {
+        std::cout << "I didn't think you'd actually find a gold coin. Fair enough, go along." << std::endl;
+        
+        // I spent way too long on this, so I went to Copilot. instead of using curLocation->get_locations(), it just goes through locationPtrs.
+        // Then it just looks for a library pointer. It gets dereferenced twice because we made a pointer to the pointer. 
+        // It's a bit messy but it works well. 
+        auto libIt = std::find_if(locationPtrs.begin(), locationPtrs.end(),
+            [](Location* loc) { return loc->getName() == "Library"; });
+            
+        if (libIt != locationPtrs.end()) {
+            // Add North connection to current location pointing to Library 
+            curLocation->add_location("North", **libIt);
+            std::cout << "[You can now go north to the library.]" << std::endl;
+        }
+    }
+    else if (npcName == "wishgranter") {
+        if (itemIt->getCalories() == 0) {
+            std::cout << ">> Why'd you give me that? Maybe I should've just done the blood sacrifice. Hey look what I can do! <<" << std::endl;
+            teleport();
+            std::cout << "[You were teleported far away. You are now in " << curLocation->getName() << ".]" << std::endl;
+            return;
+        }
+        else {
+        wishgranterCalories += itemIt->getCalories();
+        std::cout << "The unearthly monolith glows as you give it the " << itemName << "." << std::endl;
+        std::cout << "The Wishgranter's calories: " << wishgranterCalories << "/500" << std::endl;
+        
+        if (wishgranterCalories >= 500) {
+            std::cout << ">> That was a weird meal, but it was good enough. What's your wish mortal?\n" << std::endl;
+            std::cout << "You wish for the world to be normal again.\n" << std::endl;
+            std::cout << ">> That's such a lame wish. You could've wished for a utopia or something but you just wanted the status quo? Whatever. <<\n" << std::endl;
+            std::cout << "The world is back to normal. You're late for class." << std::endl;
+            std::cout << ">> YOU WIN! <<" << std::endl;
+            isRunning = false;
+            exit();
+        }
+        }
+    }
+    else if (npcName == "levi" && itemName == "levi's journal") {
+        std::cout << "Oh, it was right there? Well, a deal's a deal" << std::endl;
+        std::cout << "[You were given a can of beans.]" << std::endl;
+        Item beans = Item("Beans", "A can of beans.", 50, 1.0);
+        playerCarryWeight += beans.getWeight();
+        playerInventory.push_back(beans);
+    }
+    else {
+        std::cout << "Why would I want this? I'm not giving it back but I'm not grateful." << std::endl;
+    }
+}
+
+void Game::teleport() {
+    // Create a random number generator (thanks copilot)
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(0, locationPtrs.size() - 1);
+
+    // Select a random location
+    int randomIndex = dis(gen);
+
+    // This is only used by the wishgranter, so we want it to be any location besides Housing
+    while (locationPtrs[randomIndex]->getName() == "On Campus Housing") {
+        randomIndex = dis(gen);
+    }
+    curLocation = locationPtrs[randomIndex];
+}
+
 
 void Game::createWorld() {
+    // initalize player carry weight and wishgranter calories
+    playerCarryWeight = 0.0;
+    wishgranterCalories = 0.0;
+
     // Create Location objects on the heap
     Location* kirkoff = new Location("Kirkoff", "The central bus station for GVSU.");
     Location* stadium = new Location("Stadium", "The GVSU soccer field.");
     Location* housing = new Location("On Campus Housing", "GVSU's home to Lakers.");
     Location* library = new Location("Library", "The library located on the Allendale campus.");
-    Location* levisHouse = new Location("Levis House", "A GVSU student's house.");
+    Location* levisHouse = new Location("Levi's House", "A GVSU student's house.");
     Location* mackinac = new Location("Mackinac", "Home of GVSU computing.");
+    Location* bridge = new Location("Bridge", "A bridge over the valley. It's a long way down.");
+    Location* meijer = new Location("Meijer", "A ransacked grocery store.");
 
     locationPtrs.push_back(kirkoff);
     locationPtrs.push_back(stadium);
@@ -142,30 +297,40 @@ void Game::createWorld() {
     locationPtrs.push_back(library);
     locationPtrs.push_back(levisHouse);
     locationPtrs.push_back(mackinac);
+    locationPtrs.push_back(bridge);
+    locationPtrs.push_back(meijer);
 
     // Define movement directions
-    kirkoff->add_location("west", *library);
-    kirkoff->add_location("south", *stadium);
+    kirkoff->add_location("West", *library);
+    kirkoff->add_location("South", *stadium);
+    kirkoff->add_location("North", *meijer);
 
-    stadium->add_location("south", *housing);
-    stadium->add_location("north", *kirkoff);
+    stadium->add_location("South", *housing);
+    stadium->add_location("North", *kirkoff);
+    stadium->add_location("West", *bridge);
 
-    housing->add_location("north", *stadium);
+    housing->add_location("North", *stadium);
 
-    library->add_location("east", *kirkoff);
-    library->add_location("north", *mackinac);
+    library->add_location("East", *kirkoff);
+    library->add_location("North", *mackinac);
+    library->add_location("South", *bridge);
 
-    mackinac->add_location("east", *levisHouse);
-    mackinac->add_location("south", *library);
+    mackinac->add_location("East", *meijer);
+    mackinac->add_location("South", *library);
 
-    levisHouse->add_location("west", *mackinac);
+    levisHouse->add_location("West", *meijer);
+
+    meijer->add_location("West", *mackinac);
+    meijer->add_location("South", *kirkoff);
+    meijer->add_location("East", *levisHouse);
+
+    bridge->add_location("East", *stadium);
 
     // Set starting location
-    curLocation = kirkoff; // Set curLocation to point to kirkoff
+    curLocation = housing; // Set curLocation to point to housing
 
     // Create item objects
     Item* book = new Item("Book", "A book for reading.", 0, 0.5);
-    Item* backpack = new Item("Backpack", "A backpack for carrying items.", 0, 2.0);
     Item* levisJournal = new Item("Levi's Journal", "A journal with notes about C++.", 0, 1.0);
     Item* busPass = new Item("Bus Pass", "A bus pass for the Laker Line.", 0, 0.1);
     Item* cake = new Item("Chocolate Cake", "Must've been a birthday party.", 150, 5.0);
@@ -175,27 +340,57 @@ void Game::createWorld() {
     Item* fish = new Item("Fish", "A fish.", 100, 3.0);
     Item* helmet = new Item("Helmet", "A helmet for protection.", 0, 5.0);
 
+    Item* knife = new Item("Knife", "A knife for protection.", 0, 4.0);
+    Item* goldCoin = new Item("Gold Coin", "A conveniently placed coin. It might be worthwhile taking this with.", 0, 0.1);
+    Item* sushi = new Item("Sushi", "Even in an apocalypse, Meijer still has killer deals on sushi.", 50, 2.0);
+
+    Item* debugCookie = new Item("Debug Cookie", "A cookie", 500, 0.1);
+    housing->addItem(*debugCookie);
+
     // Add items to locations
     stadium->addItem(*helmet);
     levisHouse->addItem(*levisJournal);
     library->addItem(*book);
-    housing->addItem(*backpack);
     kirkoff->addItem(*busPass);
-    housing->addItem(*cake);
+    kirkoff->addItem(*cake);
     mackinac->addItem(*nuggies);
     levisHouse->addItem(*granolaBar);
     library->addItem(*bread);
     stadium->addItem(*fish);
+    stadium->addItem(*goldCoin);
+    meijer->addItem(*sushi);
+    housing->addItem(*knife);
+
 
     // Create NPC objects
+    NPC* monolith = new NPC("Wishgranter", "A monolithic rock that speaks to you.");
     NPC* levi = new NPC("Levi", "A GVSU student who loves C++.");
     NPC* busDriver = new NPC("Bus Driver", "The driver of the Laker Line.");
     NPC* librarian = new NPC("Librarian", "The librarian at the GVSU library.");
+    NPC* troll = new NPC("Troll", "A troll guarding the bridge.");
+
+    monolith->set_messages({"Approach, young one. I bring you an offer.", \
+                            "I know you miss all the homework and stress that came with classes before the world ended.", \
+                            "I can do anything imagineable, but I'm a very hungry deity. Bring me some food and I'll grant you one wish.", \
+                            "Usually I'd ask for a blood sacrifice but I'm feeling generous today."});
+
+    
+    levi->set_messages({"Hey, I'm Levi.", "Ever since the world ended I've been so bored. I can't even code C++ anymore!", \
+                         "If you find my journal around here, I'll trade you some beans for it!"});
+
+    
+    troll->set_messages({"This is my bridge. I'll only grant you passage if you give me a Gold Coin!", \
+                        "I know this is stereotypical, but I love this bridge. Easily top 5 bridges of all time."});   
+
+    
+
 
     // Add NPCs to locations
     library->add_npc(*librarian);
     kirkoff->add_npc(*busDriver);
     levisHouse->add_npc(*levi);
+    housing->add_npc(*monolith);
+    bridge->add_npc(*troll);
 }
 
 void Game::exit() {
