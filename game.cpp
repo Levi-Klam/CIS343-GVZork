@@ -1,3 +1,6 @@
+// Created By: Levi Klamer, Mason Passinault, Blaze Lauer
+
+
 #include "game.h"
 #include <iostream>
 #include <cctype>    // for std::tolower
@@ -358,7 +361,7 @@ void Game::createWorld() {
     Item* bread = new Item("Bread", "A loaf of bread.", 50, 1.0);
     Item* fish = new Item("Fish", "A live fish with legs.", 100, 3.0);
     Item* helmet = new Item("Helmet", "A helmet for protection.", 0, 5.0);
-
+    
     Item* knife = new Item("Knife", "A knife for protection.", 0, 4.0);
     Item* goldCoin = new Item("Gold Coin", "A conveniently placed coin. It might be worthwhile taking this with.", 0, 0.1);
     Item* sushi = new Item("Sushi", "Even in an apocalypse, Meijer still has killer deals on sushi.", 50, 2.0);

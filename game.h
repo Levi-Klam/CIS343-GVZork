@@ -1,6 +1,8 @@
 #ifndef GAME_H
 #define GAME_H
 
+// Created By: Levi Klamer, Mason Passinault, Blaze Lauer
+
 #include <vector>
 #include <string>
 #include "classes.hpp"

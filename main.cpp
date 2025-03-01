@@ -1,3 +1,5 @@
+// Created By: Levi Klamer, Mason Passinault, Blaze Lauer
+
 #include <iostream>
 #include <string>
 #include "game.h"

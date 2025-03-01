@@ -1,6 +1,8 @@
 #ifndef     __HPP__CLASSES__
 #define     __HPP__CLASSES__
 
+// Created By: Levi Klamer, Mason Passinault, Blaze Lauer
+
 #include <iostream>
 #include <stdexcept>
 #include <vector>
