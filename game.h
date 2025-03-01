@@ -10,6 +10,7 @@ private:
     Location* curLocation;
     std::vector<Location*> locationPtrs;
     std::vector<Item> playerInventory;
+    float wishgranterCalories;
     float playerCarryWeight;
     bool isRunning;
 
@@ -22,6 +23,9 @@ public:
     void take(std::string itemName);
     void drop(std::string itemName);
     void show_items();
+    void talk(const std::string& npcName);
+    void give(const std::string& itemName, const std::string& npcName);
+    void teleport();
     void exit();
 };
 

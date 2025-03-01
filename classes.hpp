@@ -35,6 +35,10 @@ class Item {
           return name;
         }
 
+        float getCalories() const {
+          return calories;
+        }
+
         float getWeight() const {
           return weight;
         }
@@ -90,13 +94,12 @@ class NPC {
         }
 
         std::string get_message() {
-          if(this->messageNum >= this->messages.size()-1){
-            this->messageNum = 0;
-          } else {
-            this->messageNum++;
+          if (messages.empty()) {
+              return "";
           }
-
-          return this->messages[this->messageNum];
+          std::string message = messages[messageNum];
+          messageNum = (messageNum + 1) % messages.size();
+          return message;
         }
 
     private:
@@ -190,8 +193,6 @@ class Location {
           auto finalSize = items.size();
         }
 
-
-
     
     private:
         std::string name;
@@ -206,19 +207,19 @@ class Location {
         os << "You see the following NPCs:\n";
         // list NPCs
         for(auto& npc : location.npcs) {
-          os << npc.get() << "\n";
+          os << "- " << npc.get() << "\n";
         }
 
         os << "You see the following Items:\n";
         // list Items
         for (const auto& item : location.items) {
-          os << item.get() << "\n";
+          os << "- " << item.get() << "\n";
         }
 
         os << "You can go in the following Directions:\n";
         // list locations/directions that are connected to this Location
         for(auto& pair : location.neighbors) {
-          os << pair.first << " - " << pair.second.get().get_description() << "\n";
+          os << "- " << pair.first << " - " << pair.second.get().get_description() << "\n";
         }
         
         return os;
