@@ -3,10 +3,14 @@
 #include <cctype>    // for std::tolower
 #include <algorithm> // for std::find_if
 #include <random>   // for teleporting the player
+#include <unordered_map>
+#include <functional>
 
-#include "classes.hpp" 
+#include "classes.hpp"
 
 void Game::startGame() {
+    initializeCommands(); // Initialize the command map
+
     std::string command;
     std::cout << "You wake up from a bad dream where you were late for class. Thankfully, you don't have classes anymore, because the world ended."  << std::endl;
     std::cout << "There's a monolithic rock in front of you, urging you to speak to it." << std::endl;
@@ -23,53 +27,54 @@ void Game::startGame() {
     }
 }
 
-void Game::processCommand(std::string command) {
-    if (command == "quit") {
-        isRunning = false;
-        exit();
-    }
-    else if (command == "help") {
-        displayHelp();
-    }
-    else if (command == "look") {
-        std::cout << *curLocation << std::endl;
-    }
-    // I updated this so commands are entered as "go north" instead of "north"
-    else if ((command.rfind("go ", 0) == 0) && (command.substr(3) == "north" || command.substr(3) == "south" \
-                                                || command.substr(3) == "east" || command.substr(3) == "west")) {
-        go(command.substr(3));
-    }
-    else if (command.rfind("pickup ", 0) == 0) {
-        // If the command starts with "pickup ", grab the item name from the rest of the string
-        // and call pickUpItem
-        std::string itemName = command.substr(7);
-        take(itemName);
-    }
-    else if (command.rfind("drop ", 0) == 0) {
-        // Same as above, but for dropping items
-        std::string itemName = command.substr(5);
-        drop(itemName);
-    }
-    else if (command == "backpack") {
-        show_items();
-    }
-    else if (command.rfind("talk ", 0) == 0) {
-        std::string npcName = command.substr(5);
-        talk(npcName);
-    }
-    else if (command.rfind("give ", 0) == 0) {
-        // This was copilot assisted. I had to add a spacePos variable to find the space after the npc name
-        // and then use that to split the string into npcName and itemName
-        size_t spacePos = command.find(' ', 5);
+void Game::initializeCommands() {
+    // Copilot assisted with the framework for the command map, using unordered_map and std::function
+    commandMap["quit"] = [this](const std::string&) { isRunning = false; exit(); };
+    commandMap["exit"] = [this](const std::string&) { isRunning = false; exit(); };
+    commandMap["help"] = [this](const std::string&) { displayHelp(); };
+    commandMap["display help"] = [this](const std::string&) { displayHelp(); };
+    commandMap["look"] = [this](const std::string&) { std::cout << *curLocation << std::endl; };
+    commandMap["go"] = [this](const std::string& arg) { go(arg); };
+    commandMap["proceed"] = [this](const std::string& arg) { go(arg); };
+    commandMap["walk"] = [this](const std::string& arg) { go(arg); };
+    commandMap["pickup"] = [this](const std::string& arg) { take(arg); };
+    commandMap["take"] = [this](const std::string& arg) { take(arg); };
+    commandMap["grab"] = [this](const std::string& arg) { take(arg); };
+    commandMap["drop"] = [this](const std::string& arg) { drop(arg); };
+    commandMap["backpack"] = [this](const std::string&) { show_items(); };
+    commandMap["inventory"] = [this](const std::string&) { show_items(); };
+    commandMap["talk"] = [this](const std::string& arg) { 
+        // Grab anything after the LAST space, so players can input "talk to __" or "talk with ___"
+        size_t lastSpacePos = arg.find_last_of(' ');
+        std::string npcName = (lastSpacePos == std::string::npos) ? arg : arg.substr(lastSpacePos + 1);
+        talk(npcName); 
+    };
+    commandMap["speak"] = [this](const std::string& arg) { 
+        size_t lastSpacePos = arg.find_last_of(' ');
+        std::string npcName = (lastSpacePos == std::string::npos) ? arg : arg.substr(lastSpacePos + 1);
+        talk(npcName); 
+    };
+    commandMap["give"] = [this](const std::string& arg) {
+        size_t spacePos = arg.find(' ');
         if (spacePos != std::string::npos) {
-            std::string npcName = command.substr(5, spacePos - 5);
-            std::string itemName = command.substr(spacePos + 1);
+            std::string npcName = arg.substr(0, spacePos);
+            std::string itemName = arg.substr(spacePos + 1);
             give(npcName, itemName);
         } else {
             std::cout << "Invalid give command format. Use 'give [npc] [item]'." << std::endl;
         }
-    }
-    else {
+    };
+}
+
+void Game::processCommand(std::string command) {
+    size_t spacePos = command.find(' ');
+    std::string cmd = (spacePos == std::string::npos) ? command : command.substr(0, spacePos);
+    std::string arg = (spacePos == std::string::npos) ? "" : command.substr(spacePos + 1);
+
+    auto it = commandMap.find(cmd);
+    if (it != commandMap.end()) {
+        it->second(arg);
+    } else {
         std::cout << "Invalid command" << std::endl;
     }
 }
@@ -232,19 +237,14 @@ void Game::give(const std::string& npcName, const std::string& itemName) {
             return;
         }
         else {
-        wishgranterCalories += itemIt->getCalories();
-        std::cout << "The unearthly monolith glows as you give it the " << itemName << "." << std::endl;
-        std::cout << "The Wishgranter's calories: " << wishgranterCalories << "/500" << std::endl;
-        
-        if (wishgranterCalories >= 500) {
-            std::cout << ">> That was a weird meal, but it was good enough. What's your wish mortal?\n" << std::endl;
-            std::cout << "You wish for the world to be normal again.\n" << std::endl;
-            std::cout << ">> That's such a lame wish. You could've wished for a utopia or something but you just wanted the status quo? Whatever. <<\n" << std::endl;
-            std::cout << "The world is back to normal. You're late for class." << std::endl;
-            std::cout << ">> YOU WIN! <<" << std::endl;
-            isRunning = false;
-            exit();
-        }
+            wishgranterCalories += itemIt->getCalories();
+            std::cout << "The unearthly monolith glows as you give it the " << itemName << "." << std::endl;
+            std::cout << "The Wishgranter's calories: " << wishgranterCalories << "/500" << std::endl;
+            
+            if (wishgranterCalories >= 500) {
+                youWin();
+                return;
+            }
         }
     }
     else if (npcName == "levi" && itemName == "levi's journal") {
@@ -253,6 +253,25 @@ void Game::give(const std::string& npcName, const std::string& itemName) {
         Item beans = Item("Beans", "A can of beans.", 50, 1.0);
         playerCarryWeight += beans.getWeight();
         playerInventory.push_back(beans);
+    }
+    else if (npcName == "driver" && itemName == "bus pass") {
+        std::cout << "That's gotta be the last bus pass in GVSU. I'll take you to Standale." << std::endl;
+        std::cout << "[You now have access to Standale locations. Head north to check them out.]" << std::endl;
+        
+        
+        // Find Mackinac and Meijer locations
+        auto mackinacIt = std::find_if(locationPtrs.begin(), locationPtrs.end(),
+            [](Location* loc) { return loc->getName() == "Mackinac"; });
+        auto meijerIt = std::find_if(locationPtrs.begin(), locationPtrs.end(),
+            [](Location* loc) { return loc->getName() == "Meijer"; });
+            
+        if (mackinacIt != locationPtrs.end() && meijerIt != locationPtrs.end()) {
+            // Add East connection from Mackinac to Meijer
+            (**mackinacIt).add_location("East", **meijerIt);
+            curLocation->add_location("North", **meijerIt);
+
+        }
+        
     }
     else {
         std::cout << "Why would I want this? I'm not giving it back but I'm not grateful." << std::endl;
@@ -303,7 +322,7 @@ void Game::createWorld() {
     // Define movement directions
     kirkoff->add_location("West", *library);
     kirkoff->add_location("South", *stadium);
-    kirkoff->add_location("North", *meijer);
+    // kirkoff->add_location("North", *meijer);
 
     stadium->add_location("South", *housing);
     stadium->add_location("North", *kirkoff);
@@ -315,7 +334,7 @@ void Game::createWorld() {
     library->add_location("North", *mackinac);
     library->add_location("South", *bridge);
 
-    mackinac->add_location("East", *meijer);
+    // mackinac->add_location("East", *meijer);
     mackinac->add_location("South", *library);
 
     levisHouse->add_location("West", *meijer);
@@ -337,7 +356,7 @@ void Game::createWorld() {
     Item* nuggies = new Item("Nuggies", "6 piece nugget.", 50, 1.0);
     Item* granolaBar = new Item("Granola Bar", "A light snack.", 25, 0.5);
     Item* bread = new Item("Bread", "A loaf of bread.", 50, 1.0);
-    Item* fish = new Item("Fish", "A fish.", 100, 3.0);
+    Item* fish = new Item("Fish", "A live fish with legs.", 100, 3.0);
     Item* helmet = new Item("Helmet", "A helmet for protection.", 0, 5.0);
 
     Item* knife = new Item("Knife", "A knife for protection.", 0, 4.0);
@@ -365,7 +384,7 @@ void Game::createWorld() {
     // Create NPC objects
     NPC* monolith = new NPC("Wishgranter", "A monolithic rock that speaks to you.");
     NPC* levi = new NPC("Levi", "A GVSU student who loves C++.");
-    NPC* busDriver = new NPC("Bus Driver", "The driver of the Laker Line.");
+    NPC* busDriver = new NPC("Driver", "The driver of the Laker Line.");
     NPC* librarian = new NPC("Librarian", "The librarian at the GVSU library.");
     NPC* troll = new NPC("Troll", "A troll guarding the bridge.");
 
@@ -380,7 +399,12 @@ void Game::createWorld() {
 
     
     troll->set_messages({"This is my bridge. I'll only grant you passage if you give me a Gold Coin!", \
-                        "I know this is stereotypical, but I love this bridge. Easily top 5 bridges of all time."});   
+                        "I know this is stereotypical, but I love this bridge. Easily top 5 bridges of all time."});
+                        
+    librarian->set_messages({"Welcome to the library. I'm the librarian.", "I'm sorry, but I can't let you check out any books. They're all overdue."});
+
+    busDriver->set_messages({"Welcome to the Laker Line. I'm the bus driver.", "If you bring me a bus pass, I'll give you access to Standale.", \
+                            "I don't care that the world ended, a bus pass is a bus pass.", "I've been siphoning gas all day, got me seeing things..."});
 
     
 
@@ -391,6 +415,16 @@ void Game::createWorld() {
     levisHouse->add_npc(*levi);
     housing->add_npc(*monolith);
     bridge->add_npc(*troll);
+}
+
+void Game::youWin() {
+    std::cout << ">> That was a weird meal, but it was good enough. What's your wish mortal?\n" << std::endl;
+    std::cout << "You wish for the world to be normal again.\n" << std::endl;
+    std::cout << ">> That's such a lame wish. You could've wished for a utopia or something but you just wanted the status quo? Whatever. <<\n" << std::endl;
+    std::cout << "The world is back to normal. You're late for class." << std::endl;
+    std::cout << ">> YOU WIN! <<" << std::endl;
+    isRunning = false;
+    exit();
 }
 
 void Game::exit() {

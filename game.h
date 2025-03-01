@@ -13,6 +13,7 @@ private:
     float wishgranterCalories;
     float playerCarryWeight;
     bool isRunning;
+    std::unordered_map<std::string, std::function<void(const std::string&)>> commandMap; // Initialize the map for different command syntax.
 
 public:
     void startGame();
@@ -26,6 +27,8 @@ public:
     void talk(const std::string& npcName);
     void give(const std::string& itemName, const std::string& npcName);
     void teleport();
+    void initializeCommands();
+    void youWin();
     void exit();
 };
 
