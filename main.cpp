@@ -5,9 +5,7 @@
 
 int main() {
     Game game; // Create a game object
-    game.createWorld();
-    game.startGame(); 
+    game.startGame(); // Call the function to start the game
 
     return 0;
 }
-
