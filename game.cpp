@@ -1,7 +1,7 @@
 // Created By: Levi Klamer, Mason Passinault, Blaze Lauer
 
 
-#include "game.h"
+#include "game.hpp"
 #include <iostream>
 #include <cctype>    // for std::tolower
 #include <algorithm> // for std::find_if
@@ -68,6 +68,8 @@ void Game::initializeCommands() {
             std::cout << "Invalid give command format. Use 'give [npc] [item]'." << std::endl;
         }
     };
+    commandMap["read"] = [this](const std::string&) { read(); }; 
+    commandMap["jump"] = [this](const std::string&) { jump(); };
 }
 
 void Game::processCommand(std::string command) {
@@ -94,6 +96,7 @@ void Game::displayHelp() {
     std::cout << "  talk [npc] - Talk to an NPC" << std::endl;
     std::cout << "  give [npc] [item] - Give an item to an NPC" << std::endl;
     std::cout << "  quit  - Quit the game" << std::endl;
+    std::cout << "There's some commands that are context-based. Pay attention and try things out!" << std::endl;
 }
 
 void Game::go(std::string target) {
@@ -327,6 +330,31 @@ void Game::siphonGas() {
     }    
 }
 
+void Game::read() {
+    auto it = std::find_if(playerInventory.begin(), playerInventory.end(), [](const Item& item) {
+        return item.getName() == "Book";
+    });
+
+    if (it != playerInventory.end()) {
+        std::cout << "You open the book about surviving in an end-times scenario." << std::endl;
+        std::cout << "It's actually a guide book for the hit game Fallout 4. You didn't get much help but you know what to play after saving the world." << std::endl;
+    } else {
+        std::cout << "You don't have a book to read." << std::endl;
+    }
+}
+
+void Game::jump() {
+    if (curLocation->getName() == "Bridge") {
+        std::cout << "Saving the world shouldn't be you're problem." << std::endl;
+        std::cout << ">> YOU LOSE <<\n" << std::endl;
+        isRunning = false;
+        exit();
+    }
+    else {
+        std::cout << "You jump up and down. Nothing happens." << std::endl;
+    }
+}
+
 void Game::createWorld() {
     // initalize player carry weight and wishgranter calories
     playerCarryWeight = 0.0;
@@ -381,7 +409,7 @@ void Game::createWorld() {
     curLocation = housing; // Set curLocation to point to housing
 
     // Create item objects
-    Item* book = new Item("Book", "A book for reading.", 0, 0.5);
+    Item* book = new Item("Book", "A book about surviving in an apocalypse.", 0, 0.5);
     Item* levisJournal = new Item("Levi's Journal", "A journal with notes about C++.", 0, 1.0);
     Item* busPass = new Item("Bus Pass", "A bus pass for the Laker Line.", 0, 0.1);
     Item* cake = new Item("Chocolate Cake", "Must've been a birthday party.", 150, 5.0);
@@ -389,13 +417,13 @@ void Game::createWorld() {
     Item* granolaBar = new Item("Granola Bar", "A light snack.", 25, 0.5);
     Item* bread = new Item("Bread", "A loaf of bread.", 50, 1.0);
     Item* fish = new Item("Fish", "A live fish with legs.", 100, 3.0);
-    Item* helmet = new Item("Helmet", "A helmet for protection.", 0, 5.0);
+    Item* helmet = new Item("Helmet", "A helmet for protection. It fits your head perfectly.", 0, 5.0);
     
     Item* knife = new Item("Knife", "A knife for protection.", 0, 4.0);
     Item* goldCoin = new Item("Gold Coin", "A conveniently placed coin. It might be worthwhile taking this with.", 0, 0.1);
     Item* sushi = new Item("Sushi", "Even in an apocalypse, Meijer still has killer deals on sushi.", 50, 2.0);
 
-    Item* debugCookie = new Item("Debug Cookie", "A cookie", 500, 0.1);
+    Item* debugCookie = new Item("Debug Cookie", "A cookie from God to make testing this dimension easier.", 500, 0.1);
 
     // Add items to locations
     housing->addItem(*debugCookie);
@@ -420,10 +448,10 @@ void Game::createWorld() {
     NPC* librarian = new NPC("Librarian", "The librarian at the GVSU library.");
     NPC* troll = new NPC("Troll", "A troll guarding the bridge.");
 
-    monolith->set_messages({"Approach, young one. I bring you an offer.", \
-                            "I know you miss all the homework and stress that came with classes before the world ended.", \
-                            "I can do anything imagineable, but I'm a very hungry deity. Bring me some food and I'll grant you one wish.", \
-                            "Usually I'd ask for a blood sacrifice but I'm feeling generous today."});
+    monolith->set_messages({">> Approach, mortal. I bring you an offer. <<", \
+                            ">> I know you miss all the homework and stress that came with classes before the world ended. <<", \
+                            ">> I can do anything imagineable, but I'm a very hungry deity. Bring me some food and I'll grant you one wish. <<", \
+                            ">> Usually I'd ask for a blood sacrifice but I'm feeling generous today. <<"});
 
     
     levi->set_messages({"Hey, I'm Levi.", "Ever since the world ended I've been so bored. I can't even code C++ anymore!", \
@@ -463,5 +491,6 @@ void Game::exit() {
     for (auto location : locationPtrs) {
         delete location;
     }
+
 }
 
