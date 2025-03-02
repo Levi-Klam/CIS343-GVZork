@@ -73,6 +73,7 @@ void Game::initializeCommands() {
 }
 
 void Game::processCommand(std::string command) {
+    // Split the command into the command and argument
     size_t spacePos = command.find(' ');
     std::string cmd = (spacePos == std::string::npos) ? command : command.substr(0, spacePos);
     std::string arg = (spacePos == std::string::npos) ? "" : command.substr(spacePos + 1);
@@ -145,6 +146,7 @@ void Game::take(std::string itemName) {
 }
 
 void Game::drop(std::string itemName) {
+    // If item in player inventory, add to location, remove from inventory, and update player carry weight
     auto it = std::find_if(playerInventory.begin(), playerInventory.end(), [&itemName](const Item& item) {
         std::string itemNameInList = item.getName();
         std::transform(itemNameInList.begin(), itemNameInList.end(), itemNameInList.begin(), ::tolower);
@@ -170,6 +172,7 @@ void Game::show_items() {
 }
 
 void Game::talk(const std::string& npcName) {
+    // Make input and npcName lowercase. 
     const auto& npcs = curLocation->get_npcs();
     auto it = std::find_if(npcs.begin(), npcs.end(),
         [&npcName](const std::reference_wrapper<NPC>& npc) {
@@ -178,6 +181,7 @@ void Game::talk(const std::string& npcName) {
                           npcNameInList.begin(), ::tolower);
             return npcNameInList == npcName;
         });
+    // If the NPC is found, print their message.
     if (it != npcs.end()) {
         std::cout << it->get().get_message() << std::endl;
     } else {
@@ -221,6 +225,7 @@ void Game::give(const std::string& npcName, const std::string& itemName) {
     playerCarryWeight -= itemIt->getWeight();
     playerInventory.erase(itemIt);
     
+    // Couple custom interactions for specific NPCs
     if (npcName == "troll" && itemName == "gold coin") {
         std::cout << "I didn't think you'd actually find a gold coin. Fair enough, go along." << std::endl;
         
@@ -344,6 +349,7 @@ void Game::read() {
 }
 
 void Game::jump() {
+    // Levi did this
     if (curLocation->getName() == "Bridge") {
         std::cout << "Saving the world shouldn't be you're problem." << std::endl;
         std::cout << ">> YOU LOSE <<\n" << std::endl;
