@@ -46,6 +46,7 @@ void Game::initializeCommands() {
     commandMap["drop"] = [this](const std::string& arg) { drop(arg); };
     commandMap["backpack"] = [this](const std::string&) { show_items(); };
     commandMap["inventory"] = [this](const std::string&) { show_items(); };
+    commandMap["siphon"] = [this](const std::string&) { siphonGas(); };
     commandMap["talk"] = [this](const std::string& arg) { 
         // Grab anything after the LAST space, so players can input "talk to __" or "talk with ___"
         size_t lastSpacePos = arg.find_last_of(' ');
@@ -113,8 +114,8 @@ void Game::go(std::string target) {
         return; 
     }
 
-    std::cout << "You moved." << std::endl;
     curLocation = &it->second.get(); // Move to the new location
+    std::cout << "You moved to " << curLocation->getName() << "." << std::endl;
 }
 
 void Game::take(std::string itemName) {
@@ -297,6 +298,34 @@ void Game::teleport() {
     curLocation = locationPtrs[randomIndex];
 }
 
+// Siphon gas function
+void Game::siphonGas() {
+    if (curLocation->getName() == "Kirkoff") {
+        std::cout << "You siphon gas from the bus. You start to get a little dizzy and you pass out." << std::endl;
+
+        if (!playerInventory.empty()) {
+            // Random number generator
+            std::random_device rd;
+            std::mt19937 gen(rd());
+            std::uniform_int_distribution<> dis(0, playerInventory.size() - 1);
+
+            // Select a random item from the player's inventory
+            int randomIndex = dis(gen);
+            Item lostItem = playerInventory[randomIndex];
+
+            // Remove the item from the player's inventory
+            playerCarryWeight -= lostItem.getWeight();
+            playerInventory.erase(playerInventory.begin() + randomIndex);
+
+            std::cout << "You wake up and realize that you lost " << lostItem.getName() << " from your inventory." << std::endl;
+        }
+        else {
+            std::cout << "You wake up and find that your inventory is still empty." << std::endl;
+        }
+    } else {
+        std::cout << "There is no bus to siphon gas from here." << std::endl;
+    }    
+}
 
 void Game::createWorld() {
     // initalize player carry weight and wishgranter calories
@@ -367,9 +396,9 @@ void Game::createWorld() {
     Item* sushi = new Item("Sushi", "Even in an apocalypse, Meijer still has killer deals on sushi.", 50, 2.0);
 
     Item* debugCookie = new Item("Debug Cookie", "A cookie", 500, 0.1);
-    housing->addItem(*debugCookie);
 
     // Add items to locations
+    housing->addItem(*debugCookie);
     stadium->addItem(*helmet);
     levisHouse->addItem(*levisJournal);
     library->addItem(*book);

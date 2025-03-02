@@ -29,6 +29,7 @@ public:
     void talk(const std::string& npcName);
     void give(const std::string& itemName, const std::string& npcName);
     void teleport();
+    void siphonGas();
     void initializeCommands();
     void youWin();
     void exit();

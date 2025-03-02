@@ -205,7 +205,7 @@ class Location {
         std::vector<std::reference_wrapper<Item>> items;
 
     friend std::ostream& operator<<(std::ostream& os, const Location& location) {
-        os << location.name << " - " << location.description << "\n";
+        os << "Current Location: " << location.name << " - " << location.description << "\n";
         os << "You see the following NPCs:\n";
         // list NPCs
         for(auto& npc : location.npcs) {
@@ -221,7 +221,7 @@ class Location {
         os << "You can go in the following Directions:\n";
         // list locations/directions that are connected to this Location
         for(auto& pair : location.neighbors) {
-          os << "- " << pair.first << " - " << pair.second.get().get_description() << "\n";
+          os << "- " << pair.first << " - " << pair.second.get().getName() << " - " << pair.second.get().get_description() << "\n";
         }
         
         return os;
